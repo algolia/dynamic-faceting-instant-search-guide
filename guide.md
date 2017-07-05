@@ -21,7 +21,8 @@ _This guide is intended to demonstrate how one could go about building a dynamic
 ## Configuration Variables
 
 - Create / include / import an object in the JS file where you are implementing instantsearch.js with property keys that are all the possible names of the attributes you wish to ultimately make facet-able. The property values should be the name of the parent attribute. For example:
-```
+
+```js
 FACET_CONFIG = {
   "Size": "numeric_attributes",
   "Brand": "non_numeric_attributes",
@@ -30,12 +31,14 @@ FACET_CONFIG = {
 ```
 
 - Create a config variable and assign it an integer value representing the maximum number of facet attributes we want to use to build refinement lists with. For example:
-```
+
+```js
 MAX_FACET_DISPLAYED = 10;
 ```
 
 - Create a variable to store a reference to the DOM node we will use as the container for all our future refinement lists. For example:
-```
+
+```js
 const refinementListContainer = document.body.querySelector('#refinement-lists');
 ```
 
@@ -44,7 +47,8 @@ const refinementListContainer = document.body.querySelector('#refinement-lists')
 #### (1) - Custom search function
 
 Inside the instantsearch.js instance's param object, declare a `searchParameters` property which indicates that `dynamic_attributes` should be a disjunctiveFacet from the beginning:
-```
+
+```js
 const search = instantsearch({
 
   // ...
@@ -59,7 +63,8 @@ const search = instantsearch({
 ```
 
 Inside the instantsearch.js instance's param object, we can override the search function by simply declaring a property called `searchFunction`. Its value will be a callback function to be executed when a search is performed. We want to customize this to perform 2 back-to-back searches. The first will simply retrieve the facet values for the `dynamic_attributes` attribute we defined on each record. For efficiency, it will not be used to retrieve any actual records. To do this, we will employ the [searchOnce](https://community.algolia.com/algoliasearch-helper-js/reference.html#AlgoliaSearchHelper#searchOnce) method, setting the param object `{hitsPerPage:0}` to ensure we don't needlessly get any hits in the response. We can then take our newly retrieved list of facets, sort them by count, grab as many as we want (determined by the value we assign to the `MAX_FACET_DISPLAYED` config variable), and add them to the helper state. Finally, we trigger a 2nd search with our new facets, this time to actually get real results for display. When finished, our custom search function will look something like this:
-```
+
+```js
 const search = instantsearch({
 
   // ...
@@ -101,7 +106,8 @@ const search = instantsearch({
 ##### Custom widget -> `init` method
 
 Inside `init` we can register event listeners that may be used to handle clicks on facet values to perform a specific refinement on our search. There are a number of reasonable ways to do this, depending on the desired goal of the implementation, but in this case, we will plan to only register one single listener for all `click` events on the container housing our refinement lists. We will include an exit-early clause in the listener callback function, such that we only continue if the click occurs on a valid element (one associated with a facet value we want to filter on). The rest of the logic in our event handler will revolve around performing conditional checks to determine what type of refinement to make, then updating our query with the correct refinement. The specifics of this may differ depending on the desired structure of your markup (including `classNames`, etc). When finished our custom widget's `init` method will look something like this:
-```
+
+```js
 init: function (options) { // This method executes once, when the dynamicFacetsWidget is initialized
 
   // ...
@@ -168,7 +174,8 @@ init: function (options) { // This method executes once, when the dynamicFacetsW
 ##### Custom widget -> `render` method
 
 Inside `render`, we can define the logic to remove previous refinement lists and build / append new ones to the DOM. Here we will again take our facets, order them by the sum of the counts of their respective values, then build refinement lists out of them. One key consideration here is to add adequately specific markup for the click event handler (from the custom widget's `init` method) to determine what refinement to make. Finally we append them to the DOM. When finished, our custom widget's `render` method will look something like this:
-```
+
+```js
 render: function (options) {
 
   // ...
@@ -233,8 +240,8 @@ render: function (options) {
 #### (3) - Finish up
 
 Next, let's make sure we've added 2 default instantsearch widgets - one for a search box and another to render hits:
-```
 
+```js
 // ...
 
 // Main search input
@@ -260,19 +267,17 @@ search.addWidget(
 );
 
 // ...
-
 ```
+
 Finally, let's add our custom widget and start the search:
 
-```
-
+```js
 // ...
 
 search.addWidget(dynamicFacetsWidget);
 search.start();
 
 // ...
-
 ```
 
 That's it! We've successfully implemented dynamic faceting with [instantsearch.js](https://github.com/algolia/instantsearch.js)!
