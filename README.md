@@ -281,3 +281,70 @@ search.start();
 ```
 
 That's it! We've successfully implemented dynamic faceting with [instantsearch.js](https://github.com/algolia/instantsearch.js)!
+
+### Notes:
+
+This method of implementing dynamic faceting with instant search currently uses disjunctive facets to look up the `dynamic_attributes`, and uses regular conjunctive facets for the refinement lists (for more on conjunctive vs disjunctive faceting [see here](https://www.algolia.com/doc/guides/searching/faceting/#conjunctive-and-disjunctive-faceting) ). If you'd like the refinement lists to use disjunctive faceting, a few small modifications can be made to reverse how the facets are used:
+
+#### List of changes to make to use disjunctive faceting for the refinementLists:
+
+##### 1) Inside our `searchParameters` property during initialization, we have this:
+```
+searchParameters: {
+  disjunctiveFacets: ['dynamic_attributes']
+},
+```
+It should be changed to:
+```
+searchParameters: {
+  facets: ['dynamic_attributes']
+},
+```
+---------------------------------------------------------------------------
+##### 2) At the top of our custom `searchFunction()`, we have this:
+```
+// After changing the query, reset active facets
+  helper.setState(helper.state.setFacets(['']));
+```
+It should be changed to this:
+```
+// After changing the query, reset active facets
+  helper.setState(helper.state.setDisjunctiveFacets(['']));
+```
+---------------------------------------------------------------------------
+##### 3) Inside our custom `searchFunction()`, we have this:
+```
+helper.searchOnce({hitsPerPage:0}).then(function(params) {
+  const content = params.content;
+  if(content.disjunctiveFacets) {
+```
+It should be changed to:
+```
+helper.searchOnce({hitsPerPage:0}).then(function(params) {
+  const content = params.content;
+  if(content.facets) {
+```
+---------------------------------------------------------------------------
+##### 4) Inside our custom `searchFunction()`, we have this:
+```
+// Update helper state to use newly retrieved facets
+helper.setState(helper.state.setFacets(facetsForRefinement));
+```
+It should be changed to:
+```
+// Update helper state to use newly retrieved facets
+helper.setState(helper.state.setDisjunctiveFacets(facetsForRefinement));
+```
+---------------------------------------------------------------------------
+##### 5) At the top of our custom widget render method, we have this:
+```
+const content = options.results;
+let facetValues = content.facets.map((facet) => {
+```
+It should be changed to:
+```
+const content = options.results;
+let facetValues = content.disjunctiveFacets.map((facet) => {
+```
+
+There are of course numerous ways to implement this - InstantSearch.js is highly customizable. Happy hacking!
